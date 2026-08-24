@@ -392,10 +392,9 @@ else:
 st.divider()
 
 st.caption(
-   " ProcureTrace is a prototype for pattern detection. "
-    "Risk scores are indicators for investigation and are not "
-    "proof of financial crime."
-
+    "ProcureTrace is a prototype for pattern detection. "
+    ...
+)
 # -----------------------------
 # RELATIONSHIP NETWORK
 # -----------------------------
