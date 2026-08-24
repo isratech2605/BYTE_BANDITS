@@ -732,48 +732,90 @@ if len(combined_risk) > 0:
     )
 
 # =========================================================
-# INVESTIGATION QUEUE
+# INVESTIGATION PRIORITY QUEUE
 # =========================================================
 
 st.divider()
 
-st.header("🚨 Investigation Queue")
+st.header("🚨 Investigation Priority Queue")
 
-high_risk = filtered_df[
-    filtered_df["Risk_Level"] == "HIGH"
-].sort_values(
-    "Risk_Score",
+st.write(
+    "Cases are ranked using the combined pattern risk score "
+    "so investigators can prioritize the strongest signals first."
+)
+
+priority_queue = combined_risk.copy()
+
+priority_queue = priority_queue.sort_values(
+    "Final_Risk_Score",
     ascending=False
 )
 
-if len(high_risk) > 0:
+priority_queue["Priority_Rank"] = range(
+    1,
+    len(priority_queue) + 1
+)
 
-    st.write(
-        "These transactions have the strongest individual "
-        "risk signals and may be prioritized for human review."
-    )
+# Show top cases first
+st.subheader("🏆 Highest-Priority Patterns")
 
-    st.dataframe(
-        high_risk[
-            [
-                "Transaction_ID",
-                "Project_ID",
-                "Contractor_ID",
-                "Supplier_ID",
-                "Material",
-                "Markup_%",
-                "Risk_Score",
-                "Risk_Level"
-            ]
-        ],
-        use_container_width=True
-    )
+st.dataframe(
+    priority_queue[
+        [
+            "Priority_Rank",
+            "Contractor_ID",
+            "Supplier_ID",
+            "Transaction_Count",
+            "Project_Count",
+            "Average_Markup",
+            "Activity_Days",
+            "Final_Risk_Score",
+            "Final_Risk_Level"
+        ]
+    ].head(10),
+    use_container_width=True
+)
 
-else:
+# Top 3 cases
+st.subheader("⚡ Immediate Attention")
 
-    st.success(
-        "No high-risk transactions detected."
-    )
+top_cases = priority_queue.head(3)
+
+for _, case in top_cases.iterrows():
+
+    score = case["Final_Risk_Score"]
+
+    if score >= 70:
+
+        st.error(
+            f"🔴 PRIORITY #{int(case['Priority_Rank'])} — "
+            f"{case['Contractor_ID']} ↔ "
+            f"{case['Supplier_ID']} | "
+            f"Risk: {int(score)}/100"
+        )
+
+    elif score >= 40:
+
+        st.warning(
+            f"🟠 PRIORITY #{int(case['Priority_Rank'])} — "
+            f"{case['Contractor_ID']} ↔ "
+            f"{case['Supplier_ID']} | "
+            f"Risk: {int(score)}/100"
+        )
+
+    else:
+
+        st.info(
+            f"🟢 PRIORITY #{int(case['Priority_Rank'])} — "
+            f"{case['Contractor_ID']} ↔ "
+            f"{case['Supplier_ID']} | "
+            f"Risk: {int(score)}/100"
+        )
+
+st.caption(
+    "Risk ranking supports investigation prioritization. "
+    "It is not a determination of fraud or corruption."
+)
 # =========================================================
 # INVESTIGATION REPORT
 # =========================================================
