@@ -983,7 +983,7 @@ st.divider()
 
 st.header("🕵️ Investigator View")
 
-if len(priority_queue) > 0:
+
 
     # ---------------------------------------------
     # SELECT HIGH-RISK TRANSACTION
