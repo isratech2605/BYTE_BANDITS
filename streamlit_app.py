@@ -738,6 +738,20 @@ if len(combined_risk) > 0:
 st.divider()
 
 st.header("🚨 Investigation Priority Queue")
+st.subheader("🎚️ Investigation Sensitivity")
+
+risk_threshold = st.slider(
+    "Minimum risk score for investigation",
+    min_value=0,
+    max_value=100,
+    value=50,
+    step=5
+)
+
+st.write(
+    f"Showing patterns with a combined risk score "
+    f"of **{risk_threshold} or higher**."
+)
 
 st.write(
     "Cases are ranked using the combined pattern risk score "
@@ -745,6 +759,9 @@ st.write(
 )
 
 priority_queue = combined_risk.copy()
+priority_queue = priority_queue[
+    priority_queue["Final_Risk_Score"] >= risk_threshold
+]
 
 priority_queue = priority_queue.sort_values(
     "Final_Risk_Score",
