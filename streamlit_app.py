@@ -901,7 +901,6 @@ if len(combined_risk) > 0:
         "⚠️ This report identifies patterns for human review. "
         "It does not establish fraud, corruption, or criminal intent."
     )
-
 # =========================================================
 # INVESTIGATOR VIEW
 # =========================================================
@@ -909,77 +908,12 @@ if len(combined_risk) > 0:
 st.divider()
 
 st.header("🕵️ Investigator View")
-# Contractor investigation filter
-
-st.subheader("👤 Contractor Investigation")
-
-contractor_options = ["All"] + sorted(
-    df["Contractor_ID"].dropna().unique().tolist()
-)
-
-selected_contractor = st.selectbox(
-    "Select contractor",
-    contractor_options
-)
-
-if selected_contractor != "All":
-
-    contractor_data = df[
-        df["Contractor_ID"] == selected_contractor
-    ]
-
-    st.write(
-        f"Showing activity for **{selected_contractor}**"
-    )
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric(
-            "Transactions",
-            len(contractor_data)
-        )
-
-    with col2:
-        st.metric(
-            "Projects",
-            contractor_data["Project_ID"].nunique()
-        )
-
-    with col3:
-        st.metric(
-            "Average Markup",
-            f"{contractor_data['Markup_%'].mean():.1f}%"
-        )
-
-    st.subheader("Transaction History")
-
-    st.dataframe(
-        contractor_data[
-            [
-                "Transaction_ID",
-                "Date",
-                "Project_ID",
-                "Supplier_ID",
-                "Material",
-                "Declared_Unit_Price",
-                "Reference_Unit_Price",
-                "Markup_%",
-                "Risk_Level"
-            ]
-        ].sort_values(
-            "Date"
-        ),
-        use_container_width=True
-    )
-
-else:
-
-    st.info(
-        "Select a contractor to investigate its transaction history."
-    )
 
 if len(high_risk) > 0:
+
+    # ---------------------------------------------
+    # SELECT HIGH-RISK TRANSACTION
+    # ---------------------------------------------
 
     selected_transaction = st.selectbox(
         "Select a high-risk transaction",
@@ -987,9 +921,12 @@ if len(high_risk) > 0:
     )
 
     transaction = high_risk[
-        high_risk["Transaction_ID"]
-        == selected_transaction
+        high_risk["Transaction_ID"] == selected_transaction
     ].iloc[0]
+
+    # ---------------------------------------------
+    # BASIC RISK METRICS
+    # ---------------------------------------------
 
     col1, col2, col3 = st.columns(3)
 
@@ -1014,7 +951,12 @@ if len(high_risk) > 0:
             transaction["Risk_Level"]
         )
 
+    # ---------------------------------------------
+    # WHY WAS IT FLAGGED?
+    # ---------------------------------------------
+
     st.subheader("Why was this transaction flagged?")
+
     reasons = []
 
     # Price anomaly
@@ -1047,8 +989,12 @@ if len(high_risk) > 0:
             f"{transaction['Quantity']:,.0f} units."
         )
 
-    # Contractor-supplier relationship
+    # ---------------------------------------------
+    # CONTRACTOR-SUPPLIER RELATIONSHIP
+    # ---------------------------------------------
+
     contractor = transaction["Contractor_ID"]
+
     supplier = transaction["Supplier_ID"]
 
     relationship = relationship_analysis[
@@ -1081,7 +1027,10 @@ if len(high_risk) > 0:
                 f"{int(rel['Project_Count'])} projects."
             )
 
-    # Temporal signal
+    # ---------------------------------------------
+    # TEMPORAL SIGNAL
+    # ---------------------------------------------
+
     temporal_match = temporal_analysis[
         (
             temporal_analysis["Contractor_ID"]
@@ -1105,23 +1054,29 @@ if len(high_risk) > 0:
                 f"{int(temp['Activity_Days'])} days."
             )
 
-    # Display reasons
+    # ---------------------------------------------
+    # DISPLAY REASONS
+    # ---------------------------------------------
+
     if len(reasons) > 0:
 
         for reason in reasons:
 
-            st.write("🔎 " + reason)
+            st.write(
+                "🔎 " + reason
+            )
 
     else:
 
         st.write(
             "No major individual risk indicators detected."
         )
- 
 
+    # ---------------------------------------------
+    # TRANSACTION DETAILS
+    # ---------------------------------------------
 
-
- st.subheader("Transaction Details")
+    st.subheader("📋 Transaction Details")
 
     st.write(
         {
@@ -1131,16 +1086,18 @@ if len(high_risk) > 0:
             "Supplier": transaction["Supplier_ID"],
             "Material": transaction["Material"],
             "Location": transaction["Location"],
+            "Date": str(transaction["Date"]),
             "Quantity": transaction["Quantity"],
             "Declared Price": transaction["Declared_Unit_Price"],
-            "Reference Price": transaction["Reference_Unit_Price"]
+            "Reference Price": transaction["Reference_Unit_Price"],
+            "Markup": f"{transaction['Markup_%']:.1f}%"
         }
     )
 
 else:
 
-    st.info(
-        "No high-risk transaction is currently available "
+    st.success(
+        "No high-risk transactions are currently available "
         "for investigation."
     )
 
