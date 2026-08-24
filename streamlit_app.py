@@ -1101,92 +1101,90 @@ else:
         "No high-risk transactions are currently available "
         "for investigation."
     )
-
 # =========================================================
 # RELATIONSHIP NETWORK
 # =========================================================
 
 st.divider()
 
-st.header("🔗 Contractor–Supplier Relationship Network")
+st.header("🕸️ Financial Relationship Network")
 
 st.write(
-    "This view highlights repeated financial relationships "
-    "that may deserve further investigation."
+    "Each node represents a contractor or supplier. "
+    "Connections represent procurement relationships."
 )
 
-network_display = relationship_analysis[
-    [
-        "Contractor_ID",
-        "Supplier_ID",
-        "Transaction_Count",
-        "Project_Count",
-        "Average_Markup",
-        "Pattern_Risk_Score"
-    ]
-].copy()
-
-network_display["Relationship"] = (
-    network_display["Contractor_ID"].astype(str)
-    + " ↔ "
-    + network_display["Supplier_ID"].astype(str)
+network = Network(
+    height="650px",
+    width="100%",
+    bgcolor="#ffffff",
+    font_color="#000000"
 )
 
-network_display = network_display[
-    [
-        "Relationship",
-        "Transaction_Count",
-        "Project_Count",
-        "Average_Markup",
-        "Pattern_Risk_Score"
-    ]
-]
+network.barnes_hut()
 
-network_display = network_display.sort_values(
-    "Pattern_Risk_Score",
-    ascending=False
+# Add contractor and supplier nodes
+for contractor in relationship_analysis["Contractor_ID"].unique():
+
+    network.add_node(
+        str(contractor),
+        label=str(contractor),
+        title="Contractor",
+        shape="dot"
+    )
+
+
+for supplier in relationship_analysis["Supplier_ID"].unique():
+
+    network.add_node(
+        str(supplier),
+        label=str(supplier),
+        title="Supplier",
+        shape="square"
+    )
+
+
+# Add relationships
+for _, row in relationship_analysis.iterrows():
+
+    contractor = str(row["Contractor_ID"])
+    supplier = str(row["Supplier_ID"])
+
+    transactions = int(
+        row["Transaction_Count"]
+    )
+
+    risk_score = int(
+        row["Pattern_Risk_Score"]
+    )
+
+    network.add_edge(
+        contractor,
+        supplier,
+        value=transactions,
+        title=(
+            f"Transactions: {transactions}<br>"
+            f"Projects: {int(row['Project_Count'])}<br>"
+            f"Average Markup: "
+            f"{row['Average_Markup']:.1f}%<br>"
+            f"Pattern Risk: {risk_score}/100"
+        )
+    )
+
+
+# Generate HTML
+network_html = network.generate_html()
+
+st.components.v1.html(
+    network_html,
+    height=700,
+    scrolling=True
 )
 
-st.subheader("Strongest Financial Relationships")
-
-st.dataframe(
-    network_display,
-    use_container_width=True
+st.caption(
+    "Hover over a relationship to inspect transaction count, "
+    "projects, markup and pattern risk."
 )
-
-if len(network_display) > 0:
-
-    top_relationships = network_display.head(5)
-
-    st.subheader("🚨 Relationships Requiring Attention")
-
-    for _, row in top_relationships.iterrows():
-
-        if row["Pattern_Risk_Score"] >= 70:
-
-            st.error(
-                f"🔴 {row['Relationship']} | "
-                f"Risk Score: {row['Pattern_Risk_Score']}/100 | "
-                f"{int(row['Transaction_Count'])} transactions | "
-                f"{int(row['Project_Count'])} projects"
-            )
-
-        elif row["Pattern_Risk_Score"] >= 40:
-
-            st.warning(
-                f"🟠 {row['Relationship']} | "
-                f"Risk Score: {row['Pattern_Risk_Score']}/100 | "
-                f"{int(row['Transaction_Count'])} transactions | "
-                f"{int(row['Project_Count'])} projects"
-            )
-
-        else:
-
-            st.info(
-                f"🟢 {row['Relationship']} | "
-                f"Risk Score: {row['Pattern_Risk_Score']}/100"
-            )
-
 
 # =========================================================
 # DISCLAIMER
