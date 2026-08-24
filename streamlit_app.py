@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from pyvis.network import Network
 
 # =========================================================
 # PAGE CONFIG
