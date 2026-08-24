@@ -1101,6 +1101,91 @@ else:
         "for investigation."
     )
 
+# =========================================================
+# RELATIONSHIP NETWORK
+# =========================================================
+
+st.divider()
+
+st.header("🔗 Contractor–Supplier Relationship Network")
+
+st.write(
+    "This view highlights repeated financial relationships "
+    "that may deserve further investigation."
+)
+
+network_display = relationship_analysis[
+    [
+        "Contractor_ID",
+        "Supplier_ID",
+        "Transaction_Count",
+        "Project_Count",
+        "Average_Markup",
+        "Pattern_Risk_Score"
+    ]
+].copy()
+
+network_display["Relationship"] = (
+    network_display["Contractor_ID"].astype(str)
+    + " ↔ "
+    + network_display["Supplier_ID"].astype(str)
+)
+
+network_display = network_display[
+    [
+        "Relationship",
+        "Transaction_Count",
+        "Project_Count",
+        "Average_Markup",
+        "Pattern_Risk_Score"
+    ]
+]
+
+network_display = network_display.sort_values(
+    "Pattern_Risk_Score",
+    ascending=False
+)
+
+st.subheader("Strongest Financial Relationships")
+
+st.dataframe(
+    network_display,
+    use_container_width=True
+)
+
+if len(network_display) > 0:
+
+    top_relationships = network_display.head(5)
+
+    st.subheader("🚨 Relationships Requiring Attention")
+
+    for _, row in top_relationships.iterrows():
+
+        if row["Pattern_Risk_Score"] >= 70:
+
+            st.error(
+                f"🔴 {row['Relationship']} | "
+                f"Risk Score: {row['Pattern_Risk_Score']}/100 | "
+                f"{int(row['Transaction_Count'])} transactions | "
+                f"{int(row['Project_Count'])} projects"
+            )
+
+        elif row["Pattern_Risk_Score"] >= 40:
+
+            st.warning(
+                f"🟠 {row['Relationship']} | "
+                f"Risk Score: {row['Pattern_Risk_Score']}/100 | "
+                f"{int(row['Transaction_Count'])} transactions | "
+                f"{int(row['Project_Count'])} projects"
+            )
+
+        else:
+
+            st.info(
+                f"🟢 {row['Relationship']} | "
+                f"Risk Score: {row['Pattern_Risk_Score']}/100"
+            )
+
 
 # =========================================================
 # DISCLAIMER
