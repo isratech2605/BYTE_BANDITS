@@ -1015,56 +1015,34 @@ if len(high_risk) > 0:
         )
 
     st.subheader("Why was this transaction flagged?")
-
     reasons = []
 
-    if transaction["Markup_%"] >= 80:
-        reasons.append(
-            "Very large deviation from the reference price."
-        )
+if transaction["Markup_%"] >= 80:
+    ...
+    
+elif transaction["Markup_%"] >= 20:
+    ...
 
-    elif transaction["Markup_%"] >= 20:
-        reasons.append(
-            "Declared price is significantly above the reference price."
-        )
+contractor = transaction["Contractor_ID"]
+supplier = transaction["Supplier_ID"]
 
-    contractor = transaction["Contractor_ID"]
-    supplier = transaction["Supplier_ID"]
+relationship = relationship_analysis[
+    ...
+]
 
-    relationship = relationship_analysis[
-        (
-            relationship_analysis["Contractor_ID"]
-            == contractor
-        )
-        &
-        (
-            relationship_analysis["Supplier_ID"]
-            == supplier
-        )
-    ]
+...
 
-    if len(relationship) > 0:
-
-        rel = relationship.iloc[0]
-
-        if rel["Transaction_Count"] >= 2:
-
-            reasons.append(
-                "The same contractor-supplier relationship "
-                "appears in multiple transactions."
-            )
-
-        if rel["Project_Count"] >= 2:
-
-            reasons.append(
-                "The relationship appears across multiple projects."
-            )
-
-    for reason in reasons:
-
+for reason in reasons:
         st.write("✓ " + reason)
+     else:
 
-    st.subheader("Transaction Details")
+        st.write(
+            "No major individual risk indicators detected."
+        )
+
+
+
+ st.subheader("Transaction Details")
 
     st.write(
         {
