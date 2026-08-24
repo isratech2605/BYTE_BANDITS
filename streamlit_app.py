@@ -1034,11 +1034,7 @@ relationship = relationship_analysis[
 
 for reason in reasons:
         st.write("✓ " + reason)
-     else:
-
-        st.write(
-            "No major individual risk indicators detected."
-        )
+ 
 
 
 
