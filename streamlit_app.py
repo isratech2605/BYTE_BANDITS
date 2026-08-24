@@ -909,6 +909,75 @@ if len(combined_risk) > 0:
 st.divider()
 
 st.header("🕵️ Investigator View")
+# Contractor investigation filter
+
+st.subheader("👤 Contractor Investigation")
+
+contractor_options = ["All"] + sorted(
+    df["Contractor_ID"].dropna().unique().tolist()
+)
+
+selected_contractor = st.selectbox(
+    "Select contractor",
+    contractor_options
+)
+
+if selected_contractor != "All":
+
+    contractor_data = df[
+        df["Contractor_ID"] == selected_contractor
+    ]
+
+    st.write(
+        f"Showing activity for **{selected_contractor}**"
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            "Transactions",
+            len(contractor_data)
+        )
+
+    with col2:
+        st.metric(
+            "Projects",
+            contractor_data["Project_ID"].nunique()
+        )
+
+    with col3:
+        st.metric(
+            "Average Markup",
+            f"{contractor_data['Markup_%'].mean():.1f}%"
+        )
+
+    st.subheader("Transaction History")
+
+    st.dataframe(
+        contractor_data[
+            [
+                "Transaction_ID",
+                "Date",
+                "Project_ID",
+                "Supplier_ID",
+                "Material",
+                "Declared_Unit_Price",
+                "Reference_Unit_Price",
+                "Markup_%",
+                "Risk_Level"
+            ]
+        ].sort_values(
+            "Date"
+        ),
+        use_container_width=True
+    )
+
+else:
+
+    st.info(
+        "Select a contractor to investigate its transaction history."
+    )
 
 if len(high_risk) > 0:
 
