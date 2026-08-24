@@ -991,10 +991,10 @@ if len(priority_queue) > 0:
 
     selected_transaction = st.selectbox(
         "Select a high-risk transaction",
-        priority_queue[["Transaction_ID"].tolist()
+       priority_queue["Transaction_ID"].tolist()
     )
 
-    transaction = high_risk[
+    transaction = priority_queue[
           priority_queue["Transaction_ID"] == selected_transaction
     ].iloc[0]
 
