@@ -583,6 +583,83 @@ else:
     )
 
 # =========================================================
+# TEMPORAL PATTERN DETECTION
+# =========================================================
+
+st.divider()
+
+st.header("📅 Temporal Pattern Detection")
+
+st.write(
+    "ProcureTrace checks whether unusual procurement activity "
+    "repeats over time instead of occurring as an isolated event."
+)
+
+# Group transactions by contractor and supplier
+temporal_analysis = (
+    df.groupby(
+        ["Contractor_ID", "Supplier_ID"]
+    )
+    .agg(
+        Transaction_Count=("Transaction_ID", "count"),
+        First_Transaction=("Date", "min"),
+        Last_Transaction=("Date", "max"),
+        Average_Markup=("Markup_%", "mean")
+    )
+    .reset_index()
+)
+
+# Calculate duration of activity
+temporal_analysis["Activity_Days"] = (
+    temporal_analysis["Last_Transaction"]
+    - temporal_analysis["First_Transaction"]
+).dt.days
+
+# Identify persistent relationships
+temporal_analysis["Persistent_Pattern"] = (
+    (temporal_analysis["Transaction_Count"] >= 3)
+    &
+    (temporal_analysis["Activity_Days"] >= 30)
+)
+
+st.subheader("Repeated Activity Over Time")
+
+st.dataframe(
+    temporal_analysis[
+        [
+            "Contractor_ID",
+            "Supplier_ID",
+            "Transaction_Count",
+            "First_Transaction",
+            "Last_Transaction",
+            "Activity_Days",
+            "Average_Markup",
+            "Persistent_Pattern"
+        ]
+    ],
+    use_container_width=True
+)
+
+# Highlight persistent patterns
+
+persistent = temporal_analysis[
+    temporal_analysis["Persistent_Pattern"] == True
+]
+
+if len(persistent) > 0:
+
+    st.warning(
+        f"⏱️ {len(persistent)} relationship(s) show "
+        "persistent activity across time."
+    )
+
+else:
+
+    st.success(
+        "No persistent relationship patterns detected."
+    )
+
+# =========================================================
 # DISCLAIMER
 # =========================================================
 
