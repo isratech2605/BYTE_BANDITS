@@ -421,6 +421,273 @@ for _, row in relationship_analysis.head(5).iterrows():
             f"{projects} projects | "
             f"Average markup: {markup:.1f}%"
         )
+# =========================================================
+# TEMPORAL PATTERN DETECTION
+# =========================================================
+
+st.divider()
+
+st.header("📅 Temporal Pattern Detection")
+
+st.write(
+    "ProcureTrace checks whether unusual procurement activity "
+    "repeats over time instead of occurring as an isolated event."
+)
+
+# Group transactions by contractor and supplier
+temporal_analysis = (
+    df.groupby(
+        ["Contractor_ID", "Supplier_ID"]
+    )
+    .agg(
+        Transaction_Count=("Transaction_ID", "count"),
+        First_Transaction=("Date", "min"),
+        Last_Transaction=("Date", "max"),
+        Average_Markup=("Markup_%", "mean")
+    )
+    .reset_index()
+)
+
+# Calculate duration of activity
+temporal_analysis["Activity_Days"] = (
+    temporal_analysis["Last_Transaction"]
+    - temporal_analysis["First_Transaction"]
+).dt.days
+
+# Identify persistent relationships
+temporal_analysis["Persistent_Pattern"] = (
+    (temporal_analysis["Transaction_Count"] >= 3)
+    &
+    (temporal_analysis["Activity_Days"] >= 30)
+)
+
+st.subheader("Repeated Activity Over Time")
+
+st.dataframe(
+    temporal_analysis[
+        [
+            "Contractor_ID",
+            "Supplier_ID",
+            "Transaction_Count",
+            "First_Transaction",
+            "Last_Transaction",
+            "Activity_Days",
+            "Average_Markup",
+            "Persistent_Pattern"
+        ]
+    ],
+    use_container_width=True
+)
+
+# Highlight persistent patterns
+
+persistent = temporal_analysis[
+    temporal_analysis["Persistent_Pattern"] == True
+]
+
+if len(persistent) > 0:
+
+    st.warning(
+        f"⏱️ {len(persistent)} relationship(s) show "
+        "persistent activity across time."
+    )
+
+else:
+
+    st.success(
+        "No persistent relationship patterns detected."
+    )
+
+        
+# =========================================================
+# COMBINED PATTERN RISK SCORE
+# =========================================================
+
+st.divider()
+
+st.header("🎯 Combined Financial Pattern Risk")
+
+st.write(
+    "ProcureTrace combines pricing, relationship and temporal "
+    "signals into a single investigation-priority score."
+)
+
+# Start with a copy of the relationship analysis
+combined_risk = relationship_analysis.copy()
+
+# Price signal
+def price_signal(markup):
+
+    if markup >= 80:
+        return 40
+
+    elif markup >= 50:
+        return 30
+
+    elif markup >= 20:
+        return 15
+
+    else:
+        return 0
+
+
+combined_risk["Price_Signal"] = (
+    combined_risk["Average_Markup"]
+    .apply(price_signal)
+)
+
+# Relationship signal
+def relationship_signal(transactions):
+
+    if transactions >= 4:
+        return 25
+
+    elif transactions >= 3:
+        return 20
+
+    elif transactions >= 2:
+        return 10
+
+    else:
+        return 0
+
+
+combined_risk["Relationship_Signal"] = (
+    combined_risk["Transaction_Count"]
+    .apply(relationship_signal)
+)
+
+# Project signal
+def project_signal(projects):
+
+    if projects >= 4:
+        return 15
+
+    elif projects >= 3:
+        return 10
+
+    elif projects >= 2:
+        return 5
+
+    else:
+        return 0
+
+
+combined_risk["Project_Signal"] = (
+    combined_risk["Project_Count"]
+    .apply(project_signal)
+)
+
+# Temporal signal
+def temporal_signal(row):
+
+    if (
+        row["Transaction_Count"] >= 3
+        and row["Activity_Days"] >= 30
+    ):
+        return 20
+
+    elif row["Transaction_Count"] >= 2:
+        return 10
+
+    else:
+        return 0
+
+
+# Merge temporal information
+combined_risk = combined_risk.merge(
+    temporal_analysis[
+        [
+            "Contractor_ID",
+            "Supplier_ID",
+            "Activity_Days"
+        ]
+    ],
+    on=[
+        "Contractor_ID",
+        "Supplier_ID"
+    ],
+    how="left"
+)
+
+combined_risk["Temporal_Signal"] = (
+    combined_risk.apply(
+        temporal_signal,
+        axis=1
+    )
+)
+
+# Final score
+combined_risk["Final_Risk_Score"] = (
+    combined_risk["Price_Signal"]
+    + combined_risk["Relationship_Signal"]
+    + combined_risk["Project_Signal"]
+    + combined_risk["Temporal_Signal"]
+)
+
+combined_risk["Final_Risk_Score"] = (
+    combined_risk["Final_Risk_Score"]
+    .clip(upper=100)
+)
+
+
+# Risk category
+def final_risk_level(score):
+
+    if score >= 70:
+        return "🔴 CRITICAL"
+
+    elif score >= 50:
+        return "🔴 HIGH"
+
+    elif score >= 30:
+        return "🟠 MEDIUM"
+
+    else:
+        return "🟢 LOW"
+
+
+combined_risk["Final_Risk_Level"] = (
+    combined_risk["Final_Risk_Score"]
+    .apply(final_risk_level)
+)
+
+# Sort highest risk first
+combined_risk = combined_risk.sort_values(
+    "Final_Risk_Score",
+    ascending=False
+)
+
+st.subheader("Investigation Priority")
+
+st.dataframe(
+    combined_risk[
+        [
+            "Contractor_ID",
+            "Supplier_ID",
+            "Transaction_Count",
+            "Project_Count",
+            "Average_Markup",
+            "Activity_Days",
+            "Final_Risk_Score",
+            "Final_Risk_Level"
+        ]
+    ],
+    use_container_width=True
+)
+
+# Highest-risk pattern
+if len(combined_risk) > 0:
+
+    top_pattern = combined_risk.iloc[0]
+
+    st.warning(
+        f"🚨 Highest Priority Pattern: "
+        f"{top_pattern['Contractor_ID']} ↔ "
+        f"{top_pattern['Supplier_ID']} | "
+        f"Risk Score: "
+        f"{top_pattern['Final_Risk_Score']}/100"
+    )
 
 # =========================================================
 # INVESTIGATION QUEUE
@@ -582,82 +849,6 @@ else:
         "for investigation."
     )
 
-# =========================================================
-# TEMPORAL PATTERN DETECTION
-# =========================================================
-
-st.divider()
-
-st.header("📅 Temporal Pattern Detection")
-
-st.write(
-    "ProcureTrace checks whether unusual procurement activity "
-    "repeats over time instead of occurring as an isolated event."
-)
-
-# Group transactions by contractor and supplier
-temporal_analysis = (
-    df.groupby(
-        ["Contractor_ID", "Supplier_ID"]
-    )
-    .agg(
-        Transaction_Count=("Transaction_ID", "count"),
-        First_Transaction=("Date", "min"),
-        Last_Transaction=("Date", "max"),
-        Average_Markup=("Markup_%", "mean")
-    )
-    .reset_index()
-)
-
-# Calculate duration of activity
-temporal_analysis["Activity_Days"] = (
-    temporal_analysis["Last_Transaction"]
-    - temporal_analysis["First_Transaction"]
-).dt.days
-
-# Identify persistent relationships
-temporal_analysis["Persistent_Pattern"] = (
-    (temporal_analysis["Transaction_Count"] >= 3)
-    &
-    (temporal_analysis["Activity_Days"] >= 30)
-)
-
-st.subheader("Repeated Activity Over Time")
-
-st.dataframe(
-    temporal_analysis[
-        [
-            "Contractor_ID",
-            "Supplier_ID",
-            "Transaction_Count",
-            "First_Transaction",
-            "Last_Transaction",
-            "Activity_Days",
-            "Average_Markup",
-            "Persistent_Pattern"
-        ]
-    ],
-    use_container_width=True
-)
-
-# Highlight persistent patterns
-
-persistent = temporal_analysis[
-    temporal_analysis["Persistent_Pattern"] == True
-]
-
-if len(persistent) > 0:
-
-    st.warning(
-        f"⏱️ {len(persistent)} relationship(s) show "
-        "persistent activity across time."
-    )
-
-else:
-
-    st.success(
-        "No persistent relationship patterns detected."
-    )
 
 # =========================================================
 # DISCLAIMER
