@@ -497,7 +497,34 @@ else:
     st.success(
         "No persistent relationship patterns detected."
     )
+# =========================================================
+# PRICE DEVIATION OVER TIME
+# =========================================================
 
+st.subheader("📈 Price Deviation Over Time")
+
+st.write(
+    "This chart shows how procurement price deviations "
+    "change across transactions over time."
+)
+
+chart_data = df[
+    [
+        "Date",
+        "Markup_%"
+    ]
+].dropna().sort_values("Date")
+
+chart_data = chart_data.set_index("Date")
+
+st.line_chart(
+    chart_data["Markup_%"]
+)
+
+st.caption(
+    "Higher values indicate a larger difference between "
+    "declared and reference prices."
+)
         
 # =========================================================
 # COMBINED PATTERN RISK SCORE
