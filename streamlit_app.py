@@ -1,6 +1,13 @@
 import streamlit as st
 
-st.title("🎈 My new app")
+st.set_page_config(page_title="ProcureTrace")
+
+st.title("🔎 ProcureTrace")
+st.subheader("Procurement Risk Intelligence")
+
 st.write(
-    "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
+    "A prototype for identifying high-risk financial patterns "
+    "across procurement transactions."
 )
+
+st.success("Prototype setup successful! 🚀")
