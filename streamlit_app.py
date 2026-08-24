@@ -983,7 +983,7 @@ st.divider()
 
 st.header("🕵️ Investigator View")
 
-if len(high_risk) > 0:
+if len(priority_queue) > 0:
 
     # ---------------------------------------------
     # SELECT HIGH-RISK TRANSACTION
@@ -991,11 +991,11 @@ if len(high_risk) > 0:
 
     selected_transaction = st.selectbox(
         "Select a high-risk transaction",
-        high_risk["Transaction_ID"].tolist()
+        priority_queue[["Transaction_ID"].tolist()
     )
 
     transaction = high_risk[
-        high_risk["Transaction_ID"] == selected_transaction
+          priority_queue["Transaction_ID"] == selected_transaction
     ].iloc[0]
 
     # ---------------------------------------------
