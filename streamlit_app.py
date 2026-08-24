@@ -395,4 +395,115 @@ st.caption(
     "ProcureTrace is a prototype for pattern detection. "
     "Risk scores are indicators for investigation and are not "
     "proof of financial crime."
+
+# -----------------------------
+# RELATIONSHIP NETWORK
+# -----------------------------
+
+st.divider()
+
+st.header("🔗 Financial Relationship Network")
+
+st.write(
+    "This view shows repeated relationships between contractors "
+    "and suppliers. Larger relationships indicate more transactions."
+)
+
+# Create relationship table
+
+network_data = (
+    df.groupby(
+        ["Contractor_ID", "Supplier_ID"]
+    )
+    .size()
+    .reset_index(name="Transaction_Count")
+)
+
+# Display strongest relationships first
+
+network_data = network_data.sort_values(
+    "Transaction_Count",
+    ascending=False
+)
+
+st.subheader("Contractor ↔ Supplier Connections")
+
+st.dataframe(
+    network_data,
+    use_container_width=True
+)
+
+# -----------------------------
+# SIMPLE NETWORK VISUALIZATION
+# -----------------------------
+
+st.subheader("Relationship Map")
+
+try:
+
+    import networkx as nx
+    import matplotlib.pyplot as plt
+
+    G = nx.Graph()
+
+    for _, row in network_data.iterrows():
+
+        contractor = "Contractor " + str(row["Contractor_ID"])
+        supplier = "Supplier " + str(row["Supplier_ID"])
+
+        G.add_node(
+            contractor,
+            type="contractor"
+        )
+
+        G.add_node(
+            supplier,
+            type="supplier"
+        )
+
+        G.add_edge(
+            contractor,
+            supplier,
+            weight=row["Transaction_Count"]
+        )
+
+    fig, ax = plt.subplots(
+        figsize=(12, 7)
+    )
+
+    positions = nx.spring_layout(
+        G,
+        seed=42
+    )
+
+    nx.draw_networkx(
+        G,
+        positions,
+        ax=ax,
+        with_labels=True,
+        node_size=1800,
+        font_size=9
+    )
+
+    edge_labels = nx.get_edge_attributes(
+        G,
+        "weight"
+    )
+
+    nx.draw_networkx_edge_labels(
+        G,
+        positions,
+        edge_labels=edge_labels,
+        ax=ax
+    )
+
+    ax.set_axis_off()
+
+    st.pyplot(fig)
+
+except ImportError:
+
+    st.warning(
+        "Network visualization requires networkx and matplotlib."
+    )
 )
