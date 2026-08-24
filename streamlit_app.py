@@ -1017,23 +1017,106 @@ if len(high_risk) > 0:
     st.subheader("Why was this transaction flagged?")
     reasons = []
 
-if transaction["Markup_%"] >= 80:
-    ...
-    
-elif transaction["Markup_%"] >= 20:
-    ...
+    # Price anomaly
+    if transaction["Markup_%"] >= 80:
 
-contractor = transaction["Contractor_ID"]
-supplier = transaction["Supplier_ID"]
+        reasons.append(
+            f"Very high price deviation: "
+            f"{transaction['Markup_%']:.1f}% above the reference price."
+        )
 
-relationship = relationship_analysis[
-    ...
-]
+    elif transaction["Markup_%"] >= 50:
 
-...
+        reasons.append(
+            f"High price deviation: "
+            f"{transaction['Markup_%']:.1f}% above the reference price."
+        )
 
-for reason in reasons:
-        st.write("✓ " + reason)
+    elif transaction["Markup_%"] >= 20:
+
+        reasons.append(
+            f"Moderate price deviation: "
+            f"{transaction['Markup_%']:.1f}% above the reference price."
+        )
+
+    # Quantity signal
+    if transaction["Quantity"] >= 1000:
+
+        reasons.append(
+            f"Large declared quantity: "
+            f"{transaction['Quantity']:,.0f} units."
+        )
+
+    # Contractor-supplier relationship
+    contractor = transaction["Contractor_ID"]
+    supplier = transaction["Supplier_ID"]
+
+    relationship = relationship_analysis[
+        (
+            relationship_analysis["Contractor_ID"]
+            == contractor
+        )
+        &
+        (
+            relationship_analysis["Supplier_ID"]
+            == supplier
+        )
+    ]
+
+    if len(relationship) > 0:
+
+        rel = relationship.iloc[0]
+
+        if rel["Transaction_Count"] >= 2:
+
+            reasons.append(
+                f"Repeated contractor-supplier relationship: "
+                f"{int(rel['Transaction_Count'])} transactions."
+            )
+
+        if rel["Project_Count"] >= 2:
+
+            reasons.append(
+                f"The same relationship appears across "
+                f"{int(rel['Project_Count'])} projects."
+            )
+
+    # Temporal signal
+    temporal_match = temporal_analysis[
+        (
+            temporal_analysis["Contractor_ID"]
+            == contractor
+        )
+        &
+        (
+            temporal_analysis["Supplier_ID"]
+            == supplier
+        )
+    ]
+
+    if len(temporal_match) > 0:
+
+        temp = temporal_match.iloc[0]
+
+        if temp["Activity_Days"] >= 30:
+
+            reasons.append(
+                f"Activity persists over "
+                f"{int(temp['Activity_Days'])} days."
+            )
+
+    # Display reasons
+    if len(reasons) > 0:
+
+        for reason in reasons:
+
+            st.write("🔎 " + reason)
+
+    else:
+
+        st.write(
+            "No major individual risk indicators detected."
+        )
  
 
 
