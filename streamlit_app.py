@@ -1017,175 +1017,117 @@ if len(priority_queue) > 0:
     with col1:
 
         st.metric(
-            "Risk Score",
-            f"{transaction['Risk_Score']}/100"
+            "Pattern Risk Score",
+            f"{int(pattern['Final_Risk_Score'])}/100"
         )
 
     with col2:
 
         st.metric(
-            "Price Deviation",
-            f"{transaction['Markup_%']:.1f}%"
+            "Transactions",
+            int(pattern["Transaction_Count"])
         )
 
     with col3:
 
         st.metric(
-            "Risk Level",
-            transaction["Risk_Level"]
+            "Projects",
+            int(pattern["Project_Count"])
         )
 
     # ---------------------------------------------
-    # WHY WAS IT FLAGGED?
+    # WHY WAS THIS PATTERN FLAGGED?
     # ---------------------------------------------
 
-    st.subheader("Why was this transaction flagged?")
+    st.subheader("⚠️ Why was this pattern flagged?")
 
     reasons = []
 
-    # Price anomaly
-    if transaction["Markup_%"] >= 80:
+    if pattern["Average_Markup"] >= 80:
 
         reasons.append(
-            f"Very high price deviation: "
-            f"{transaction['Markup_%']:.1f}% above the reference price."
+            f"Very high average price deviation: "
+            f"{pattern['Average_Markup']:.1f}%."
         )
 
-    elif transaction["Markup_%"] >= 50:
+    elif pattern["Average_Markup"] >= 50:
 
         reasons.append(
-            f"High price deviation: "
-            f"{transaction['Markup_%']:.1f}% above the reference price."
+            f"High average price deviation: "
+            f"{pattern['Average_Markup']:.1f}%."
         )
 
-    elif transaction["Markup_%"] >= 20:
+    elif pattern["Average_Markup"] >= 20:
 
         reasons.append(
-            f"Moderate price deviation: "
-            f"{transaction['Markup_%']:.1f}% above the reference price."
+            f"Moderate average price deviation: "
+            f"{pattern['Average_Markup']:.1f}%."
         )
 
-    # Quantity signal
-    if transaction["Quantity"] >= 1000:
+    if pattern["Transaction_Count"] >= 3:
 
         reasons.append(
-            f"Large declared quantity: "
-            f"{transaction['Quantity']:,.0f} units."
+            f"Repeated financial relationship: "
+            f"{int(pattern['Transaction_Count'])} transactions."
         )
 
-    # ---------------------------------------------
-    # CONTRACTOR-SUPPLIER RELATIONSHIP
-    # ---------------------------------------------
+    if pattern["Project_Count"] >= 2:
 
-    contractor = transaction["Contractor_ID"]
-
-    supplier = transaction["Supplier_ID"]
-
-    relationship = relationship_analysis[
-        (
-            relationship_analysis["Contractor_ID"]
-            == contractor
+        reasons.append(
+            f"The relationship appears across "
+            f"{int(pattern['Project_Count'])} projects."
         )
-        &
-        (
-            relationship_analysis["Supplier_ID"]
-            == supplier
+
+    if pattern["Activity_Days"] >= 30:
+
+        reasons.append(
+            f"Activity persists across "
+            f"{int(pattern['Activity_Days'])} days."
         )
-    ]
-
-    if len(relationship) > 0:
-
-        rel = relationship.iloc[0]
-
-        if rel["Transaction_Count"] >= 2:
-
-            reasons.append(
-                f"Repeated contractor-supplier relationship: "
-                f"{int(rel['Transaction_Count'])} transactions."
-            )
-
-        if rel["Project_Count"] >= 2:
-
-            reasons.append(
-                f"The same relationship appears across "
-                f"{int(rel['Project_Count'])} projects."
-            )
-
-    # ---------------------------------------------
-    # TEMPORAL SIGNAL
-    # ---------------------------------------------
-
-    temporal_match = temporal_analysis[
-        (
-            temporal_analysis["Contractor_ID"]
-            == contractor
-        )
-        &
-        (
-            temporal_analysis["Supplier_ID"]
-            == supplier
-        )
-    ]
-
-    if len(temporal_match) > 0:
-
-        temp = temporal_match.iloc[0]
-
-        if temp["Activity_Days"] >= 30:
-
-            reasons.append(
-                f"Activity persists over "
-                f"{int(temp['Activity_Days'])} days."
-            )
-
-    # ---------------------------------------------
-    # DISPLAY REASONS
-    # ---------------------------------------------
 
     if len(reasons) > 0:
 
         for reason in reasons:
 
-            st.write(
-                "🔎 " + reason
-            )
+            st.write("🔎 " + reason)
 
     else:
 
         st.write(
-            "No major individual risk indicators detected."
+            "No major elevated pattern indicators detected."
         )
 
     # ---------------------------------------------
-    # TRANSACTION DETAILS
+    # PATTERN DETAILS
     # ---------------------------------------------
 
-    st.subheader("📋 Transaction Details")
+    st.subheader("📋 Pattern Details")
 
     st.write(
         {
-            "Transaction": transaction["Transaction_ID"],
-            "Project": transaction["Project_ID"],
-            "Contractor": transaction["Contractor_ID"],
-            "Supplier": transaction["Supplier_ID"],
-            "Material": transaction["Material"],
-            "Location": transaction["Location"],
-            "Date": str(transaction["Date"]),
-            "Quantity": transaction["Quantity"],
-            "Declared Price": transaction["Declared_Unit_Price"],
-            "Reference Price": transaction["Reference_Unit_Price"],
-            "Markup": f"{transaction['Markup_%']:.1f}%"
+            "Contractor": str(pattern["Contractor_ID"]),
+            "Supplier": str(pattern["Supplier_ID"]),
+            "Transactions": int(pattern["Transaction_Count"]),
+            "Projects": int(pattern["Project_Count"]),
+            "Average Markup": (
+                f"{pattern['Average_Markup']:.1f}%"
+            ),
+            "Activity Duration": (
+                f"{int(pattern['Activity_Days'])} days"
+            ),
+            "Final Risk Score": (
+                f"{int(pattern['Final_Risk_Score'])}/100"
+            ),
+            "Risk Level": str(
+                pattern["Final_Risk_Level"]
+            )
         }
     )
 
-else:
-
-    st.success(
-        "No high-risk transactions are currently available "
-        "for investigation."
+    st.info(
+        "This system identifies patterns for human review. "
+        "A high risk score does not establish fraud or corruption."
     )
-
-
 # =========================================================
 # DISCLAIMER
 # =========================================================
