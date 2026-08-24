@@ -988,15 +988,25 @@ if len(priority_queue) > 0:
     # ---------------------------------------------
     # SELECT HIGH-RISK TRANSACTION
     # ---------------------------------------------
+if len(priority_queue) > 0:
 
-    selected_transaction = st.selectbox(
-        "Select a high-risk transaction",
-       priority_queue["Transaction_ID"].tolist()
+    priority_queue["Pattern"] = (
+        priority_queue["Contractor_ID"].astype(str)
+        + " ↔ "
+        + priority_queue["Supplier_ID"].astype(str)
     )
 
-    transaction = priority_queue[
-          priority_queue["Transaction_ID"] == selected_transaction
+    selected_pattern = st.selectbox(
+        "Select a contractor-supplier pattern",
+        priority_queue["Pattern"].tolist()
+    )
+
+    pattern = priority_queue[
+        priority_queue["Pattern"] == selected_pattern
     ].iloc[0]
+
+    contractor = pattern["Contractor_ID"]
+    supplier = pattern["Supplier_ID"]
 
     # ---------------------------------------------
     # BASIC RISK METRICS
