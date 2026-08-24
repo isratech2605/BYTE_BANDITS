@@ -15,9 +15,23 @@ st.set_page_config(
 # =========================================================
 # TITLE
 # =========================================================
-
 st.title("🔎 ProcureTrace")
-st.subheader("Procurement Financial Pattern Intelligence")
+
+st.markdown(
+    """
+    ### Tracing Financial Crime Across Procurement Patterns
+
+    **Detect → Connect → Investigate**
+
+    ProcureTrace analyzes procurement transactions to identify
+    unusual pricing, repeated contractor-supplier relationships,
+    and persistent patterns over time.
+    """
+)
+
+st.caption(
+    "YEL × IGDTUW | Fintech Hackathon | Problem Statement 5"
+)
 
 st.write(
     "ProcureTrace analyzes procurement transactions to identify "
