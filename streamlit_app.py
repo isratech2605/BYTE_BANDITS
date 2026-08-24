@@ -732,6 +732,148 @@ else:
     st.success(
         "No high-risk transactions detected."
     )
+# =========================================================
+# INVESTIGATION REPORT
+# =========================================================
+
+st.divider()
+
+st.header("📋 Investigation Report")
+
+st.write(
+    "ProcureTrace generates an evidence summary for "
+    "high-priority financial patterns."
+)
+
+if len(combined_risk) > 0:
+
+    selected_pattern = st.selectbox(
+        "Select a contractor-supplier pattern",
+        (
+            combined_risk["Contractor_ID"].astype(str)
+            + " ↔ "
+            + combined_risk["Supplier_ID"].astype(str)
+        ).tolist()
+    )
+
+    selected_index = (
+        (
+            combined_risk["Contractor_ID"].astype(str)
+            + " ↔ "
+            + combined_risk["Supplier_ID"].astype(str)
+        )
+        == selected_pattern
+    )
+
+    pattern = combined_risk[
+        selected_index
+    ].iloc[0]
+
+    contractor = pattern["Contractor_ID"]
+    supplier = pattern["Supplier_ID"]
+
+    st.subheader(
+        f"🔎 {contractor} ↔ {supplier}"
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.metric(
+            "Pattern Risk Score",
+            f"{pattern['Final_Risk_Score']}/100"
+        )
+
+    with col2:
+
+        st.metric(
+            "Transactions",
+            pattern["Transaction_Count"]
+        )
+
+    with col3:
+
+        st.metric(
+            "Projects",
+            pattern["Project_Count"]
+        )
+
+    st.subheader("⚠️ Risk Factors")
+
+    reasons = []
+
+    if pattern["Average_Markup"] >= 50:
+
+        reasons.append(
+            "Significant average price deviation "
+            "from the reference price."
+        )
+
+    elif pattern["Average_Markup"] >= 20:
+
+        reasons.append(
+            "Moderate price deviation detected "
+            "across transactions."
+        )
+
+    if pattern["Transaction_Count"] >= 3:
+
+        reasons.append(
+            "Repeated transactions between the "
+            "same contractor and supplier."
+        )
+
+    if pattern["Project_Count"] >= 2:
+
+        reasons.append(
+            "Relationship appears across multiple projects."
+        )
+
+    if pattern["Activity_Days"] >= 30:
+
+        reasons.append(
+            "Activity persists across an extended time period."
+        )
+
+    if len(reasons) == 0:
+
+        reasons.append(
+            "No major elevated indicators detected."
+        )
+
+    for reason in reasons:
+
+        st.write(
+            "✓ " + reason
+        )
+
+    st.subheader("📊 Pattern Summary")
+
+    st.write(
+        f"""
+        **Contractor:** {contractor}
+
+        **Supplier:** {supplier}
+
+        **Number of transactions:** {pattern['Transaction_Count']}
+
+        **Projects involved:** {pattern['Project_Count']}
+
+        **Average price deviation:** {pattern['Average_Markup']:.1f}%
+
+        **Activity duration:** {pattern['Activity_Days']} days
+
+        **Final pattern risk:** {pattern['Final_Risk_Score']}/100
+
+        **Priority:** {pattern['Final_Risk_Level']}
+        """
+    )
+
+    st.warning(
+        "⚠️ This report identifies patterns for human review. "
+        "It does not establish fraud, corruption, or criminal intent."
+    )
 
 # =========================================================
 # INVESTIGATOR VIEW
