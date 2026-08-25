@@ -1,0 +1,16 @@
+Material,Unit,Reference_Price
+Cement,per_bag,410
+Steel,per_tonne,60000
+Bricks,per_1000,8500
+Sand,per_tonne,1800
+Aggregate,per_tonne,1600
+Concrete,per_m3,5200
+Copper,per_kg,720
+Aluminium,per_kg,245
+Bitumen,per_tonne,48000
+Paint,per_litre,180
+Electrical_Cable,per_metre,95
+PVC_Pipe,per_metre,140
+Tiles,per_sq_metre,650
+Glass,per_sq_metre,900
+Timber,per_cubic_metre,52000
