@@ -1040,25 +1040,15 @@ st.header("🕵️ Investigator View")
 if len(combined_risk) > 0:
      st.subheader("📋 Transaction Summary")
 
-    pattern_transactions = df[
+      pattern_transactions = df[
         (df["Contractor_ID"] == contractor)
         & (df["Supplier_ID"] == supplier)
     ]
 
     st.dataframe(
-        pattern_transactions[
-            [
-                "Transaction_ID",
-                "Date",
-                "Project_ID",
-                "Material",
-                "Quantity",
-                "Declared_Unit_Price",
-                "Reference_Unit_Price",
-                "Location"
-            ]
-        ],
+        pattern_transactions,
         use_container_width=True
+    )
     )
 
     # --------------------------------------------------------
