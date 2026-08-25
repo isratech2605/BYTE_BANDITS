@@ -64,7 +64,29 @@ except Exception:
 st.sidebar.success(
     f"Reference prices loaded: {len(reference_prices)} materials"
 )
+# =========================================================
+# CONNECT REFERENCE PRICES TO TRANSACTIONS
+# =========================================================
 
+# Match each transaction's material with its reference price
+df = df.drop(columns=["Reference_Unit_Price"], errors="ignore")
+
+df = df.merge(
+    reference_prices[["Material", "Reference_Price"]],
+    on="Material",
+    how="left"
+)
+
+# Use the reference dataset as the official prototype reference price
+df["Reference_Unit_Price"] = df["Reference_Price"]
+
+# Calculate how much higher/lower the declared price is
+df["Markup_%"] = (
+    (df["Declared_Unit_Price"] - df["Reference_Unit_Price"])
+    / df["Reference_Unit_Price"]
+) * 100
+
+df.drop(columns=["Reference_Price"], inplace=True)
 # =========================================================
 # CLEAN DATA
 # =========================================================
