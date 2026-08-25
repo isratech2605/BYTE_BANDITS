@@ -875,13 +875,11 @@ st.write(
     "ProcureTrace generates an evidence summary for "
     "high-priority financial patterns."
 )
-
 if len(combined_risk) > 0:
-   else:
-    st.info("No high-risk contractor-supplier patterns detected.")
-    # --------------------------------------------------------
+
+    # --------------------------------------------------
     # SELECT CONTRACTOR-SUPPLIER PATTERN
-    # --------------------------------------------------------
+    # --------------------------------------------------
 
     combined_risk["Pattern"] = (
         combined_risk["Contractor_ID"].astype(str)
@@ -894,101 +892,79 @@ if len(combined_risk) > 0:
         combined_risk["Pattern"].tolist()
     )
 
-    pattern = combined_risk[
+    selected_index = (
         combined_risk["Pattern"] == selected_pattern
+    )
+
+    pattern = combined_risk[
+        selected_index
     ].iloc[0]
 
     contractor = pattern["Contractor_ID"]
     supplier = pattern["Supplier_ID"]
 
-    # --------------------------------------------------------
-    # SUMMARY METRICS
-    # --------------------------------------------------------
+
+    # --------------------------------------------------
+    # RISK SUMMARY
+    # --------------------------------------------------
+
+    st.subheader(
+        f"🔎 {contractor} ↔ {supplier}"
+    )
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric(
             "Pattern Risk Score",
-            f"{pattern['Final_Risk_Score']:.0f}/100"
+            f"{int(pattern['Final_Risk_Score'])}/100"
         )
 
     with col2:
         st.metric(
             "Transactions",
-            pattern["Transaction_Count"]
+            int(pattern["Transaction_Count"])
         )
 
     with col3:
         st.metric(
             "Projects",
-            pattern["Project_Count"]
+            int(pattern["Project_Count"])
         )
 
     with col4:
         st.metric(
-            "Average Price Deviation",
+            "Average Markup",
             f"{pattern['Average_Markup']:.1f}%"
         )
 
-    # --------------------------------------------------------
+
+    # --------------------------------------------------
     # RISK FACTORS
-    # --------------------------------------------------------
+    # --------------------------------------------------
 
     st.subheader("⚠️ Risk Factors")
 
     reasons = []
 
     if pattern["Average_Markup"] >= 50:
-
         reasons.append(
-            "Significant average price deviation "
-            "from the reference price."
+            "Significant average price deviation from the reference price."
         )
 
     elif pattern["Average_Markup"] >= 20:
-
         reasons.append(
-            "Moderate price deviation detected "
-            "across transactions."
-        )
-
-    if pattern["Transaction_Count"] >= 3:
-
-        reasons.append(
-            "Repeated transactions between the "
-            "same contractor and supplier."
-        )
-
-    if pattern["Project_Count"] >= 2:
-
-        reasons.append(
-            "The contractor-supplier relationship "
-            "appears across multiple projects."
-        )
-
-    if len(reasons) == 0:
-
-        reasons.append(
-            "No major risk factor detected by the "
-            "current prototype rules."
-        )
-
-    for reason in reasons:
-
-        st.write("✓ " + reason)
-
-else:
-
-    st.info("No high-risk patterns were detected.")
-    if pattern["Project_Count"] >= 2:
-        reasons.append(
-            "Repeated activity across multiple projects."
+            "Moderate price deviation detected across transactions."
         )
 
     if pattern["Transaction_Count"] >= 3:
         reasons.append(
-            "Multiple transactions detected between the same contractor and supplier."
+            "Repeated transactions detected between the same contractor and supplier."
+        )
+
+    if pattern["Project_Count"] >= 2:
+        reasons.append(
+            "The contractor-supplier relationship appears across multiple projects."
         )
 
     if len(reasons) == 0:
@@ -998,6 +974,61 @@ else:
 
     for reason in reasons:
         st.write("✓ " + reason)
+
+
+    # --------------------------------------------------
+    # SUPPORTING TRANSACTIONS
+    # --------------------------------------------------
+
+    st.subheader("📋 Supporting Transactions")
+
+    pattern_transactions = df[
+        (df["Contractor_ID"] == contractor)
+        & (df["Supplier_ID"] == supplier)
+    ]
+
+    st.dataframe(
+        pattern_transactions,
+        use_container_width=True
+    )
+
+
+    # --------------------------------------------------
+    # INVESTIGATION RECOMMENDATION
+    # --------------------------------------------------
+
+    st.subheader("🔍 Recommended Investigation")
+
+    if pattern["Average_Markup"] >= 50:
+
+        st.warning(
+            "High priority investigation recommended. "
+            "Verify invoices, supplier quotations, approval records, "
+            "and the justification for the declared prices."
+        )
+
+    elif pattern["Average_Markup"] >= 20:
+
+        st.info(
+            "Moderate priority investigation recommended. "
+            "Compare the declared prices with reference prices "
+            "and review the supporting procurement documents."
+        )
+
+    else:
+
+        st.success(
+            "No significant pricing anomaly detected by the current rules. "
+            "Continue with standard verification procedures."
+        )
+
+
+else:
+
+    st.info(
+        "No high-risk contractor-supplier patterns detected."
+    )
+
 # ============================================================
 # INVESTIGATOR VIEW
 # ============================================================
