@@ -1042,7 +1042,7 @@ if len(priority_queue) > 0:
     # BASIC RISK METRICS
     # ---------------------------------------------
 
-    col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
     with col1:
 
@@ -1064,7 +1064,32 @@ if len(priority_queue) > 0:
             "Projects",
             int(pattern["Project_Count"])
         )
+with col4:
+    st.metric(
+        "Price Deviation",
+        f"{transaction['Markup_%']:.1f}%"
+    )
+st.subheader("💰 Price Comparison")
 
+price_col1, price_col2, price_col3 = st.columns(3)
+
+with price_col1:
+    st.metric(
+        "Declared Unit Price",
+        f"₹{transaction['Declared_Unit_Price']:,.2f}"
+    )
+
+with price_col2:
+    st.metric(
+        "Reference Unit Price",
+        f"₹{transaction['Reference_Unit_Price']:,.2f}"
+    )
+
+with price_col3:
+    st.metric(
+        "Deviation",
+        f"{transaction['Markup_%']:.1f}%"
+    )
     # ---------------------------------------------
     # WHY WAS THIS PATTERN FLAGGED?
     # ---------------------------------------------
