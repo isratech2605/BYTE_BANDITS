@@ -863,9 +863,9 @@ st.caption(
     "Risk ranking supports investigation prioritization. "
     "It is not a determination of fraud or corruption."
 )
-# =========================================================
+# ============================================================
 # INVESTIGATION REPORT
-# =========================================================
+# ============================================================
 
 st.divider()
 
@@ -878,57 +878,61 @@ st.write(
 
 if len(combined_risk) > 0:
 
-    selected_pattern = st.selectbox(
-        "Select a contractor-supplier pattern",
-        (
-            combined_risk["Contractor_ID"].astype(str)
-            + " ↔ "
-            + combined_risk["Supplier_ID"].astype(str)
-        ).tolist()
+    # --------------------------------------------------------
+    # SELECT CONTRACTOR-SUPPLIER PATTERN
+    # --------------------------------------------------------
+
+    combined_risk["Pattern"] = (
+        combined_risk["Contractor_ID"].astype(str)
+        + " ↔ "
+        + combined_risk["Supplier_ID"].astype(str)
     )
 
-    selected_index = (
-        (
-            combined_risk["Contractor_ID"].astype(str)
-            + " ↔ "
-            + combined_risk["Supplier_ID"].astype(str)
-        )
-        == selected_pattern
+    selected_pattern = st.selectbox(
+        "Select a contractor-supplier pattern",
+        combined_risk["Pattern"].tolist()
     )
 
     pattern = combined_risk[
-        selected_index
+        combined_risk["Pattern"] == selected_pattern
     ].iloc[0]
 
     contractor = pattern["Contractor_ID"]
     supplier = pattern["Supplier_ID"]
 
-    st.subheader(
-        f"🔎 {contractor} ↔ {supplier}"
-    )
+    # --------------------------------------------------------
+    # SUMMARY METRICS
+    # --------------------------------------------------------
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-
         st.metric(
             "Pattern Risk Score",
-            f"{pattern['Final_Risk_Score']}/100"
+            f"{pattern['Final_Risk_Score']:.0f}/100"
         )
 
     with col2:
-
         st.metric(
             "Transactions",
             pattern["Transaction_Count"]
         )
 
     with col3:
-
         st.metric(
             "Projects",
             pattern["Project_Count"]
         )
+
+    with col4:
+        st.metric(
+            "Average Price Deviation",
+            f"{pattern['Average_Markup']:.1f}%"
+        )
+
+    # --------------------------------------------------------
+    # RISK FACTORS
+    # --------------------------------------------------------
 
     st.subheader("⚠️ Risk Factors")
 
@@ -958,230 +962,151 @@ if len(combined_risk) > 0:
     if pattern["Project_Count"] >= 2:
 
         reasons.append(
-            "Relationship appears across multiple projects."
-        )
-
-    if pattern["Activity_Days"] >= 30:
-
-        reasons.append(
-            "Activity persists across an extended time period."
+            "The contractor-supplier relationship "
+            "appears across multiple projects."
         )
 
     if len(reasons) == 0:
 
         reasons.append(
-            "No major elevated indicators detected."
+            "No major risk factor detected by the "
+            "current prototype rules."
         )
 
     for reason in reasons:
 
-        st.write(
-            "✓ " + reason
-        )
+        st.write("✓ " + reason)
 
-    st.subheader("📊 Pattern Summary")
+else:
 
-    st.write(
-        f"""
-        **Contractor:** {contractor}
-
-        **Supplier:** {supplier}
-
-        **Number of transactions:** {pattern['Transaction_Count']}
-
-        **Projects involved:** {pattern['Project_Count']}
-
-        **Average price deviation:** {pattern['Average_Markup']:.1f}%
-
-        **Activity duration:** {pattern['Activity_Days']} days
-
-        **Final pattern risk:** {pattern['Final_Risk_Score']}/100
-
-        **Priority:** {pattern['Final_Risk_Level']}
-        """
-    )
-
-    st.warning(
-        "⚠️ This report identifies patterns for human review. "
-        "It does not establish fraud, corruption, or criminal intent."
-    )
-# =========================================================
+    st.info("No high-risk patterns were detected.")
+# ============================================================
 # INVESTIGATOR VIEW
-# =========================================================
+# ============================================================
 
 st.divider()
 
 st.header("🕵️ Investigator View")
 
+if len(combined_risk) > 0:
 
+    # --------------------------------------------------------
+    # SELECTED PATTERN INFORMATION
+    # --------------------------------------------------------
 
-    # ---------------------------------------------
-    # SELECT HIGH-RISK TRANSACTION
-    # ---------------------------------------------
-if len(priority_queue) > 0:
-
-    priority_queue["Pattern"] = (
-        priority_queue["Contractor_ID"].astype(str)
-        + " ↔ "
-        + priority_queue["Supplier_ID"].astype(str)
+    st.subheader(
+        f"🔎 {contractor} ↔ {supplier}"
     )
 
-    selected_pattern = st.selectbox(
-        "Select a contractor-supplier pattern",
-        priority_queue["Pattern"].tolist()
-    )
+    # --------------------------------------------------------
+    # INVESTIGATION METRICS
+    # --------------------------------------------------------
 
-    pattern = priority_queue[
-        priority_queue["Pattern"] == selected_pattern
-    ].iloc[0]
-
-    contractor = pattern["Contractor_ID"]
-    supplier = pattern["Supplier_ID"]
-
-    # ---------------------------------------------
-    # BASIC RISK METRICS
-    # ---------------------------------------------
-
-col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
 
         st.metric(
-            "Pattern Risk Score",
-            f"{int(pattern['Final_Risk_Score'])}/100"
+            "Risk Score",
+            f"{pattern['Final_Risk_Score']:.0f}/100"
         )
 
     with col2:
 
         st.metric(
             "Transactions",
-            int(pattern["Transaction_Count"])
+            pattern["Transaction_Count"]
         )
 
     with col3:
 
         st.metric(
-            "Projects",
-            int(pattern["Project_Count"])
-        )
-with col4:
-    st.metric(
-        "Price Deviation",
-        f"{transaction['Markup_%']:.1f}%"
-    )
-st.subheader("💰 Price Comparison")
-
-price_col1, price_col2, price_col3 = st.columns(3)
-
-with price_col1:
-    st.metric(
-        "Declared Unit Price",
-        f"₹{transaction['Declared_Unit_Price']:,.2f}"
-    )
-
-with price_col2:
-    st.metric(
-        "Reference Unit Price",
-        f"₹{transaction['Reference_Unit_Price']:,.2f}"
-    )
-
-with price_col3:
-    st.metric(
-        "Deviation",
-        f"{transaction['Markup_%']:.1f}%"
-    )
-    # ---------------------------------------------
-    # WHY WAS THIS PATTERN FLAGGED?
-    # ---------------------------------------------
-
-    st.subheader("⚠️ Why was this pattern flagged?")
-
-    reasons = []
-
-    if pattern["Average_Markup"] >= 80:
-
-        reasons.append(
-            f"Very high average price deviation: "
-            f"{pattern['Average_Markup']:.1f}%."
+            "Average Markup",
+            f"{pattern['Average_Markup']:.1f}%"
         )
 
-    elif pattern["Average_Markup"] >= 50:
+    # --------------------------------------------------------
+    # TRANSACTION HISTORY
+    # --------------------------------------------------------
 
-        reasons.append(
-            f"High average price deviation: "
-            f"{pattern['Average_Markup']:.1f}%."
+    st.subheader("📊 Transaction History")
+
+    pattern_transactions = df[
+        (df["Contractor_ID"] == contractor)
+        &
+        (df["Supplier_ID"] == supplier)
+    ]
+
+    if len(pattern_transactions) > 0:
+
+        st.dataframe(
+            pattern_transactions,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "No transaction records found for this pattern."
+        )
+
+    # --------------------------------------------------------
+    # INVESTIGATION SUMMARY
+    # --------------------------------------------------------
+
+    st.subheader("📝 Investigation Summary")
+
+    st.write(
+        f"The selected pattern involves contractor "
+        f"**{contractor}** and supplier **{supplier}**."
+    )
+
+    st.write(
+        f"The relationship appears in "
+        f"**{pattern['Transaction_Count']} transaction(s)** "
+        f"across **{pattern['Project_Count']} project(s)**."
+    )
+
+    st.write(
+        f"The average observed price deviation is "
+        f"**{pattern['Average_Markup']:.1f}%** compared "
+        f"with the reference price."
+    )
+
+    # --------------------------------------------------------
+    # INVESTIGATOR ACTION
+    # --------------------------------------------------------
+
+    st.subheader("🔍 Recommended Investigation Action")
+
+    if pattern["Average_Markup"] >= 50:
+
+        st.warning(
+            "High price deviation detected. "
+            "Review supporting invoices, quotations, "
+            "and procurement approvals."
         )
 
     elif pattern["Average_Markup"] >= 20:
 
-        reasons.append(
-            f"Moderate average price deviation: "
-            f"{pattern['Average_Markup']:.1f}%."
+        st.info(
+            "Moderate price deviation detected. "
+            "Compare the tender price with reference "
+            "prices and similar procurement transactions."
         )
-
-    if pattern["Transaction_Count"] >= 3:
-
-        reasons.append(
-            f"Repeated financial relationship: "
-            f"{int(pattern['Transaction_Count'])} transactions."
-        )
-
-    if pattern["Project_Count"] >= 2:
-
-        reasons.append(
-            f"The relationship appears across "
-            f"{int(pattern['Project_Count'])} projects."
-        )
-
-    if pattern["Activity_Days"] >= 30:
-
-        reasons.append(
-            f"Activity persists across "
-            f"{int(pattern['Activity_Days'])} days."
-        )
-
-    if len(reasons) > 0:
-
-        for reason in reasons:
-
-            st.write("🔎 " + reason)
 
     else:
 
-        st.write(
-            "No major elevated pattern indicators detected."
+        st.success(
+            "Price deviation is currently within "
+            "the prototype's lower-risk range."
         )
 
-    # ---------------------------------------------
-    # PATTERN DETAILS
-    # ---------------------------------------------
-
-    st.subheader("📋 Pattern Details")
-
-    st.write(
-        {
-            "Contractor": str(pattern["Contractor_ID"]),
-            "Supplier": str(pattern["Supplier_ID"]),
-            "Transactions": int(pattern["Transaction_Count"]),
-            "Projects": int(pattern["Project_Count"]),
-            "Average Markup": (
-                f"{pattern['Average_Markup']:.1f}%"
-            ),
-            "Activity Duration": (
-                f"{int(pattern['Activity_Days'])} days"
-            ),
-            "Final Risk Score": (
-                f"{int(pattern['Final_Risk_Score'])}/100"
-            ),
-            "Risk Level": str(
-                pattern["Final_Risk_Level"]
-            )
-        }
-    )
+else:
 
     st.info(
-        "This system identifies patterns for human review. "
-        "A high risk score does not establish fraud or corruption."
+        "Investigator View is unavailable because "
+        "no risk patterns were detected."
     )
 # =========================================================
 # DISCLAIMER
