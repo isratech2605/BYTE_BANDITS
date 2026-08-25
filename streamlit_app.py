@@ -877,7 +877,8 @@ st.write(
 )
 
 if len(combined_risk) > 0:
-
+   else:
+    st.info("No high-risk contractor-supplier patterns detected.")
     # --------------------------------------------------------
     # SELECT CONTRACTOR-SUPPLIER PATTERN
     # --------------------------------------------------------
@@ -980,6 +981,23 @@ if len(combined_risk) > 0:
 else:
 
     st.info("No high-risk patterns were detected.")
+    if pattern["Project_Count"] >= 2:
+        reasons.append(
+            "Repeated activity across multiple projects."
+        )
+
+    if pattern["Transaction_Count"] >= 3:
+        reasons.append(
+            "Multiple transactions detected between the same contractor and supplier."
+        )
+
+    if len(reasons) == 0:
+        reasons.append(
+            "No major risk factor identified by the current rules."
+        )
+
+    for reason in reasons:
+        st.write("✓ " + reason)
 # ============================================================
 # INVESTIGATOR VIEW
 # ============================================================
@@ -989,6 +1007,28 @@ st.divider()
 st.header("🕵️ Investigator View")
 
 if len(combined_risk) > 0:
+     st.subheader("📋 Transaction Summary")
+
+    pattern_transactions = df[
+        (df["Contractor_ID"] == contractor)
+        & (df["Supplier_ID"] == supplier)
+    ]
+
+    st.dataframe(
+        pattern_transactions[
+            [
+                "Transaction_ID",
+                "Date",
+                "Project_ID",
+                "Material",
+                "Quantity",
+                "Declared_Unit_Price",
+                "Reference_Unit_Price",
+                "Location"
+            ]
+        ],
+        use_container_width=True
+    )
 
     # --------------------------------------------------------
     # SELECTED PATTERN INFORMATION
@@ -1048,6 +1088,24 @@ if len(combined_risk) > 0:
 
         st.info(
             "No transaction records found for this pattern."
+        )
+        st.subheader("🔎 Recommended Investigation")
+
+    if pattern["Average_Markup"] >= 50:
+        st.warning(
+            "High priority: investigate the pricing difference, "
+            "supporting invoices, supplier quotations, and approval records."
+        )
+
+    elif pattern["Average_Markup"] >= 20:
+        st.info(
+            "Moderate priority: verify the declared prices against "
+            "reference prices and procurement documentation."
+        )
+
+    else:
+        st.success(
+            "Low pricing anomaly detected. Continue with standard verification."
         )
 
     # --------------------------------------------------------
