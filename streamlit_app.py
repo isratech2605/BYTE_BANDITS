@@ -50,12 +50,20 @@ st.info(
 
 try:
     df = pd.read_csv("procurementdata.csv")
+    reference_prices = pd.read_csv("reference_prices.csv")
 except Exception:
     st.error(
         "Could not find procurementdata.csv. "
         "Make sure the CSV is uploaded to the GitHub repository."
     )
     st.stop()
+# =========================================================
+# REFERENCE PRICE DATA
+# =========================================================
+
+st.sidebar.success(
+    f"Reference prices loaded: {len(reference_prices)} materials"
+)
 
 # =========================================================
 # CLEAN DATA
