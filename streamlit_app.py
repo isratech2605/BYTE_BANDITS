@@ -1038,52 +1038,83 @@ st.divider()
 st.header("🕵️ Investigator View")
 
 if len(combined_risk) > 0:
-     st.subheader("📋 Transaction Summary")
-
-      pattern_transactions = df[
-        (df["Contractor_ID"] == contractor)
-        & (df["Supplier_ID"] == supplier)
-    ]
-
-    st.dataframe(
-        pattern_transactions,
-        use_container_width=True
-    )
-    )
 
     # --------------------------------------------------------
-    # SELECTED PATTERN INFORMATION
+    # SELECTED PATTERN
     # --------------------------------------------------------
 
     st.subheader(
         f"🔎 {contractor} ↔ {supplier}"
     )
 
+    st.write(
+        "This view provides a focused investigation workspace "
+        "for the selected contractor-supplier relationship."
+    )
+
     # --------------------------------------------------------
     # INVESTIGATION METRICS
     # --------------------------------------------------------
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-
         st.metric(
             "Risk Score",
             f"{pattern['Final_Risk_Score']:.0f}/100"
         )
 
     with col2:
-
         st.metric(
             "Transactions",
-            pattern["Transaction_Count"]
+            int(pattern["Transaction_Count"])
         )
 
     with col3:
+        st.metric(
+            "Projects",
+            int(pattern["Project_Count"])
+        )
 
+    with col4:
         st.metric(
             "Average Markup",
             f"{pattern['Average_Markup']:.1f}%"
+        )
+
+    # --------------------------------------------------------
+    # RISK LEVEL
+    # --------------------------------------------------------
+
+    st.subheader("🚦 Risk Assessment")
+
+    risk_level = pattern["Final_Risk_Level"]
+
+    if pattern["Final_Risk_Score"] >= 70:
+
+        st.error(
+            f"🔴 {risk_level} — This pattern should receive "
+            "high investigation priority."
+        )
+
+    elif pattern["Final_Risk_Score"] >= 50:
+
+        st.warning(
+            f"🟠 {risk_level} — This pattern shows multiple "
+            "risk indicators."
+        )
+
+    elif pattern["Final_Risk_Score"] >= 30:
+
+        st.info(
+            f"🟡 {risk_level} — Some indicators require review."
+        )
+
+    else:
+
+        st.success(
+            f"🟢 {risk_level} — No major risk signal detected "
+            "by the current prototype rules."
         )
 
     # --------------------------------------------------------
@@ -1101,32 +1132,113 @@ if len(combined_risk) > 0:
     if len(pattern_transactions) > 0:
 
         st.dataframe(
-            pattern_transactions,
+            pattern_transactions[
+                [
+                    "Transaction_ID",
+                    "Date",
+                    "Project_ID",
+                    "Material",
+                    "Quantity",
+                    "Declared_Unit_Price",
+                    "Reference_Unit_Price",
+                    "Markup_%",
+                    "Risk_Score",
+                    "Risk_Level",
+                    "Location"
+                ]
+            ],
             use_container_width=True
         )
 
     else:
 
         st.info(
-            "No transaction records found for this pattern."
+            "No transaction records found for this contractor-supplier pattern."
         )
-        st.subheader("🔎 Recommended Investigation")
+
+    # --------------------------------------------------------
+    # RISK FACTORS
+    # --------------------------------------------------------
+
+    st.subheader("⚠️ Why Was This Pattern Flagged?")
+
+    investigator_reasons = []
 
     if pattern["Average_Markup"] >= 50:
-        st.warning(
-            "High priority: investigate the pricing difference, "
-            "supporting invoices, supplier quotations, and approval records."
+
+        investigator_reasons.append(
+            "Significant average price deviation from the reference price."
         )
 
     elif pattern["Average_Markup"] >= 20:
+
+        investigator_reasons.append(
+            "Moderate price deviation detected across transactions."
+        )
+
+    if pattern["Transaction_Count"] >= 3:
+
+        investigator_reasons.append(
+            "Repeated transactions between the same contractor and supplier."
+        )
+
+    elif pattern["Transaction_Count"] >= 2:
+
+        investigator_reasons.append(
+            "The contractor and supplier have multiple recorded transactions."
+        )
+
+    if pattern["Project_Count"] >= 2:
+
+        investigator_reasons.append(
+            "The relationship appears across multiple projects."
+        )
+
+    if pattern["Activity_Days"] >= 30:
+
+        investigator_reasons.append(
+            "The relationship persists across an extended period of time."
+        )
+
+    if len(investigator_reasons) == 0:
+
+        investigator_reasons.append(
+            "No major risk factor was identified by the current rules."
+        )
+
+    for reason in investigator_reasons:
+
+        st.write(
+            "✓ " + reason
+        )
+
+    # --------------------------------------------------------
+    # RECOMMENDED INVESTIGATION
+    # --------------------------------------------------------
+
+    st.subheader("🔍 Recommended Investigation")
+
+    if pattern["Average_Markup"] >= 50:
+
+        st.warning(
+            "High-priority investigation recommended. "
+            "Verify invoices, supplier quotations, approval records, "
+            "and the justification for the declared prices."
+        )
+
+    elif pattern["Average_Markup"] >= 20:
+
         st.info(
-            "Moderate priority: verify the declared prices against "
-            "reference prices and procurement documentation."
+            "Moderate-priority investigation recommended. "
+            "Compare declared prices with reference prices and "
+            "review supporting procurement documents."
         )
 
     else:
+
         st.success(
-            "Low pricing anomaly detected. Continue with standard verification."
+            "No significant pricing anomaly detected by the current rules. "
+            "Continue with standard verification procedures."
         )
 
     # --------------------------------------------------------
@@ -1142,8 +1254,8 @@ if len(combined_risk) > 0:
 
     st.write(
         f"The relationship appears in "
-        f"**{pattern['Transaction_Count']} transaction(s)** "
-        f"across **{pattern['Project_Count']} project(s)**."
+        f"**{int(pattern['Transaction_Count'])} transaction(s)** "
+        f"across **{int(pattern['Project_Count'])} project(s)**."
     )
 
     st.write(
@@ -1152,34 +1264,10 @@ if len(combined_risk) > 0:
         f"with the reference price."
     )
 
-    # --------------------------------------------------------
-    # INVESTIGATOR ACTION
-    # --------------------------------------------------------
-
-    st.subheader("🔍 Recommended Investigation Action")
-
-    if pattern["Average_Markup"] >= 50:
-
-        st.warning(
-            "High price deviation detected. "
-            "Review supporting invoices, quotations, "
-            "and procurement approvals."
-        )
-
-    elif pattern["Average_Markup"] >= 20:
-
-        st.info(
-            "Moderate price deviation detected. "
-            "Compare the tender price with reference "
-            "prices and similar procurement transactions."
-        )
-
-    else:
-
-        st.success(
-            "Price deviation is currently within "
-            "the prototype's lower-risk range."
-        )
+    st.caption(
+        "This analysis supports investigation prioritization "
+        "and does not establish fraud or corruption."
+    )
 
 else:
 
